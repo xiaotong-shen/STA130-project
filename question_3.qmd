@@ -1,0 +1,98 @@
+---
+title: "Question 2"
+author: "Your Name"
+date: today
+format: 
+  html:
+    theme: cosmo
+    code-fold: true
+    toc: true
+    toc-location: left
+    number-sections: true
+execute:
+  echo: true
+  warning: false
+---
+
+## Introduction
+
+In this analysis, we will... [Describe the purpose of your analysis and what questions you aim to answer. Provide context about the data and methods you'll be using.]
+
+```{r}
+#| label: setup
+#| include: false
+
+# Load required packages
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+
+# Set default theme for plots
+theme_set(theme_minimal())
+```
+
+## Data Preparation
+
+```{r}
+#| label: data-prep
+#| message: false
+
+# Load and prepare your data here
+# Example:
+# data <- read_csv("your_data.csv")
+# Clean and transform your data as needed
+```
+
+## Exploratory Data Analysis
+
+```{r}
+#| label: eda
+#| message: false
+#| fig-cap: "Description of your visualization"
+
+# Create exploratory visualizations
+# Example:
+# ggplot(data, aes(x = variable1, y = variable2)) +
+#   geom_point() +
+#   labs(title = "Title",
+#        x = "X-axis label",
+#        y = "Y-axis label")
+```
+
+## Statistical Analysis
+
+```{r}
+#| label: analysis
+#| message: false
+
+# Perform your statistical analysis here
+# Example:
+# model <- lm(y ~ x, data = your_data)
+# summary(model)
+```
+
+## Results
+
+[Describe your results here. Include:
+- Key findings from your exploratory data analysis
+- Results from statistical tests
+- Interpretation of your findings
+- Any interesting patterns or relationships discovered]
+
+## Discussion
+
+[Discuss the implications of your results:
+- What do your findings mean in the context of your research question?
+- How do they compare to existing literature or expectations?
+- What are the limitations of your analysis?]
+
+## Conclusion
+
+[Summarize your main findings and their significance. Include:
+- Brief recap of key results
+- Broader implications
+- Potential future directions]
+
+## References
+
+[Include any references cited in your analysis]
