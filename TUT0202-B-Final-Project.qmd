@@ -1,0 +1,789 @@
+
+---
+title: "Understanding Member Engagement at Wellspring:"
+subtitle: "Key Drivers of Attendance and Service Utilization"
+author: "Carrie Lam, Danni Luo, Xinyue Pu, Xiaotong Shen | TUT0202-B"
+format: beamer
+editor: visual
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,      # Hide code
+  include = TRUE,   # Do not include output
+  warning = FALSE,   # Suppress warnings
+  message = FALSE,   # Suppress messages
+  results = TRUE   # Display printed output (can use results=FALSE for a specific code chunk to suppress output)
+)
+
+# Note: the options above are to hide the code chunk in the slides and to not include the code in the slides
+# There are many other options you can use to customize which parts of the code are run / displayed, 
+# as well as how the output is displayed. 
+# You can learn more at https://quarto.org/docs/computations/execution-options.html
+
+```
+
+```{r load-data, include=FALSE, results=FALSE}
+
+# setup
+library(tidyverse)
+library(kableExtra)
+
+# Load data we need to load the data, but don't want to display it in our slides
+# The code chunk options at in the curly brackets above specif
+data_patient_members <- read_csv("Member_Background.csv")
+data_attendance_records <- read_csv("Service_Deliveries.csv")
+
+
+## Parse members data
+## Types of cancer - convert to set of indicator variables for different types of cancer (don't include ones which are too rare)
+data_patient_members <- data_patient_members |>
+   mutate(lung = str_detect(types_of_cancer, "Lung"),
+         breast = str_detect(types_of_cancer, "Breast"),
+         brain = str_detect(types_of_cancer, "Brain"),
+         leukemia = str_detect(types_of_cancer, "Leukemia"),
+         prostate = str_detect(types_of_cancer, "Prostate"),
+         colorectal = str_detect(types_of_cancer, "Colorectal"),
+         pancreatic = str_detect(types_of_cancer, "Pancreatic"),
+         lymphoma_non_hodgkins = str_detect(types_of_cancer, "Lymphoma, Non-hodgkins"),
+         liver = str_detect(types_of_cancer, "Liver"),
+         multiple_myeloma = str_detect(types_of_cancer, "Multiple Myeloma"),
+         bladder = str_detect(types_of_cancer, "Bladder"),
+         cervical = str_detect(types_of_cancer, "Cervical"),
+         esophagus = str_detect(types_of_cancer, "Esophagus"),
+         gallbladder_and_bile_duct = str_detect(types_of_cancer, "Gallbladder and Bile Duct"),
+         head_and_neck = str_detect(types_of_cancer, "Head and Neck"),
+         kidney = str_detect(types_of_cancer, "Kidney"),
+         lymphoma_hodgkins = str_detect(types_of_cancer, "Lymphoma, Hodgkins"),
+         ovarian = str_detect(types_of_cancer, "Ovarian"),
+         skin = str_detect(types_of_cancer, "Skin"),
+         stomach = str_detect(types_of_cancer, "Stomach"),
+         testicular = str_detect(types_of_cancer, "Testicular"),
+         thyroid = str_detect(types_of_cancer, "Thyroid"),
+         cervical = str_detect(types_of_cancer, "Cervical"),
+         other = str_detect(types_of_cancer, "Other"))
+
+
+## Impairments - convert to set of indicator variables for different types of impairment (don't include ones which are too rare)
+data_patient_members <- data_patient_members |>
+  mutate(visual = str_detect(i_have_the_following_impairment, "visual"),
+         cognitive = str_detect(i_have_the_following_impairment, "cognitive"),
+         limited_mobility = str_detect(i_have_the_following_impairment, "mobility"),
+         none_of_the_above = str_detect(i_have_the_following_impairment, "None of the above"),
+         other = str_detect(i_have_the_following_impairment, "other"),
+         speech = str_detect(i_have_the_following_impairment, "speech"),
+         hearing = str_detect(i_have_the_following_impairment, "hearing")) 
+
+## Program interests: Split into boolean indicators for different categories
+data_patient_members <- data_patient_members |>
+  mutate(therapeutic_arts = str_detect(program_interest, "Therapeutic Arts"),
+         educational_and_self_developoment = str_detect(program_interest, "Educational & Self-Development"),
+         symptom_management = str_detect(program_interest, "Symptom Management"),
+         social_events = str_detect(program_interest, "Social / Events"),
+         financiaL_and_workplace_strategies = str_detect(program_interest, "Financial & Workplace Strategies"),
+         exercise_and_movement = str_detect(program_interest, "Exercise & Movement"),
+         individual_and_group_support = str_detect(program_interest, "Individual & Group Support")) |>
+  mutate(num_program_interests = therapeutic_arts + educational_and_self_developoment + symptom_management + social_events + financiaL_and_workplace_strategies + exercise_and_movement + individual_and_group_support)
+
+## How did you hear about wellspring: Split into booleans
+data_patient_members <- data_patient_members |>
+  mutate(word_of_mouth = str_detect(how_have_you_heard_of_wellspring, "Word of mouth"),
+         flyer = str_detect(how_have_you_heard_of_wellspring, "flyer"),
+         wellspring_member = str_detect(how_have_you_heard_of_wellspring, "Member"),
+         wellspring_member = str_detect(how_have_you_heard_of_wellspring, "Volunteer"),
+         doctor = str_detect(how_have_you_heard_of_wellspring, "Doctor"),
+         hospital = str_detect(how_have_you_heard_of_wellspring, "hospital"),
+         hospital = str_detect(how_have_you_heard_of_wellspring, "healthcare"),
+         tv = str_detect(how_have_you_heard_of_wellspring, "television"),
+         website = str_detect(how_have_you_heard_of_wellspring, "Website"),
+         family = str_detect(how_have_you_heard_of_wellspring, "Family"),
+         social_media = str_detect(how_have_you_heard_of_wellspring, "Social Media"),
+         other = str_detect(how_have_you_heard_of_wellspring, "Other"))
+
+```
+
+```{r create-new-variables, include=FALSE, results=FALSE}
+# dataset dimensions
+data_attendance_records |> 
+  dim()
+
+# What members register for the most events?
+data_attendance_records |> 
+  group_by(member_id) |>
+  summarise(n=n()) |>
+  arrange(desc(n))
+
+# Let's examine information on the member with the highest attendance
+high_attendance <- data_attendance_records |> 
+  filter(member_id == "003ON000007sHYtYAM")
+
+data_patient_members |> filter(member_id == "003ON000007sHYtYAM")
+
+# What is range of registration dates for members in first table
+data_patient_members |> 
+  group_by(member_start_year) |>
+  summarise(n=n()) |>
+  arrange(desc(n))
+```
+
+## Introduction:
+
+**Wellspring:**
+
+-   a Canadian charity network providing free cancer support programs.
+
+**Population:**
+
+-   All potential and current members of Wellspring in Canada, including cancer patients and their families.
+
+**Audience:**
+
+-   Wellspring staff, who are experts in cancer support services but may not have formal training in statistics.
+
+## Research Questions:
+
+**1. How do age and program interests influence average monthly attendance?**
+
+**2. Does POC (Person of Color) status impact a member’s total amount of service attended?**
+
+**3. Can registration date, mailing province, and cancer risk predict attendance in the past three months?**
+
+
+
+## Question 1: Age, Program Interests, and Average Monthly Attendance
+
+This question can help Wellspring to understand the age and number of interests of the population that needs to be focused on improving attendance numbers to more effectively plan Wellspring's future programs.
+
+Variables Used:
+
+-   **Age** – Member’s age in years.
+
+-   **Program Interests** – Number of programs the member expressed interest in.
+
+-   **Services Attended** – Total number of Wellspring sessions each member participated in.
+
+-   **Membership Duration** – Calculated from join date (year & month) to March 2024.
+
+## Data Wrangling:
+
+Filtered members with valid age data$(\ge 0)$;
+
+Categorizing members based on their number of program interests:
+
+-   1 program of interest
+
+-   2-4 programs of interest
+
+-   5-7 programs of interest
+
+-   No program of interest
+
+Calculated monthly attendance as $$\frac{\textrm{Number of Services Attended}}{(2024 - \textrm{Start Year}) \times 12 + (12 - \textrm{Start Month} + 1)}$$
+
+## Visualization:
+
+\small
+
+```{r, echo=FALSE}
+library(dplyr)
+library(knitr)
+program_interest_table <- data.frame(
+  "Number of Program Interest" = c("1 program of interest", 
+                        "2-4 programs of interest", 
+                        "5-7 programs of interest", 
+                        "no program of interest"),
+  "Number of Members" = c(101, 162, 94, 2492),
+  check.names = FALSE
+)
+
+kable(program_interest_table,
+      col.names = c("Number of Program Interests", "Number of Members"),
+      caption = "Member Distribution by Program Interest",
+      align = c('l', 'c'))
+```
+
+```{r, fig.width=8, fig.height=4, out.width="80%"}
+temp <- data_patient_members |> filter(age_years >= 0) |> mutate(degree_of_focus = case_when(num_program_interests == 1 ~ "1 program of interest", 2<=num_program_interests & num_program_interests <=4 ~ "2-4 programs of interest", 5<=num_program_interests & num_program_interests <=7 ~ "5-7 programs of interest",   is.na(num_program_interests)  ~ "no program of interest"), average_attendence_per_month = number_of_present_service_deliveries / ((2024 - member_start_year) * 12 + (12 - member_start_month +1)))
+model <- temp |> ggplot(aes(x = age_years, y=average_attendence_per_month, color = degree_of_focus)) + geom_point(alpha = 0.4) + geom_smooth(method = "lm", se=FALSE) + labs(x = "Age of the participant", y = "Average attendance per month", color = "Number of Program Interests", caption = "Figure 1",title = "Prediction of member's average attendance/month with age and number of program interest as predictors")
+model
+
+
+```
+
+## Conclusion: 1. Age, Program Interests, and Average Monthly Attendance
+
+1.  **Age and Attendance:**
+
+    Older participants between approximately 30-80 years old tend to have higher average attendance rates, while younger participants tend to have a lower attendance rate.
+
+2.  **Number of Program Interests and Attendance:**
+
+    Participants with 5-7 program interests have the highest average attendance per month, while those with no program interest have the lowest, suggesting that limited interest reduces participation.
+
+    **Wellspring could:**
+
+    Develop targeted programs for younger members to increase their engagement; Promoting cross-program participation to encourage multiple program exploration.
+
+## Question 2: Impact of POC Status on Engagement
+
+Understanding differences in program attendance between POC and non-POC members helps to improve engagement by ensuring fairness.
+
+::: columns
+::: {.column width="65%"}
+
+**Variables Used:**
+
+- member id: Unique ID of each member
+- POC status: Whether identifies self as a Person of Color
+- attendance status: Attendance records.
+
+**Hypothesis Test:**
+
+- $H_0$: POC status does not affect attendance.
+- $H_A$: POC status affect attendance.
+- p-value: the likelihood of your data occurring under $H_0$.
+
+($p \ge 0.05$ means fail to reject $H_0$)
+
+:::
+
+::: {.column width="35%"}
+
+**Data Wrangling:**
+
+- Calculate total attendance by grouping member id.
+- Joined attendance data with POC status.
+- Filtered out members with missing POC status.
+
+:::
+:::
+
+## Visualization(Diagram 1)
+
+```{r}
+scenario <- c("people never sign up in 2023-2024", "people sign up at least once but never showing up", "all people that attend 0 event")
+people <- c(NA, 3)
+
+tmp <- data_attendance_records |> group_by(member_id) |> summarise(total_attendence = sum(attendance_status == "Present"))
+tmp2 <- data_patient_members |> select(member_id, i_identify_as_poc)
+
+tp <- full_join(tmp, tmp2) |> filter(!is.na(i_identify_as_poc))
+people[1] <- tp |> filter(is.na(total_attendence)) |> summarise(n=n()) |> as.numeric() # people never sign up in 2023-2024
+people[2] <- tp |> filter(total_attendence == 0) |> summarise(n=n()) |> as.numeric() # people sign up only once but not showing up
+
+tmp3 <- full_join(tmp, tmp2) |> filter(!is.na(i_identify_as_poc)) |> mutate(total_attendence = case_when(is.na(total_attendence)~0, !is.na(total_attendence)~total_attendence))
+tmp4 <- tmp3 |> filter(total_attendence<=100)
+people[3] <- tmp3 |> filter(total_attendence == 0) |> summarise(n=n()) |> as.numeric() # all people that attend 0 event
+
+plot <- tmp4 |> ggplot(aes(x = i_identify_as_poc, y = total_attendence)) + geom_boxplot() + labs(x = "identifies as person of color", y = "total attendance in the year (2023- 2024)", caption = "Figure 2", title = "Distribution of non-POC and POC members' total attendance(boxplot)") 
+plot2 <- tmp4 |> ggplot(aes(x = total_attendence)) + geom_histogram() + facet_wrap(~i_identify_as_poc) +labs(x="Total attendance of members identifies as person of color", y= "number of members", caption = "Figure 3", title = "Distribution of non-POC and POC members' total attendance(histogram)")
+plot 
+```
+## Visualization(Diagram 2)
+
+```{r}
+plot2
+```
+## Visualization(Tables)
+
+\small
+```{r, echo=FALSE}
+
+kable(tibble(scenario, people), col.names = c("Scenario", "People"),caption = "Table of different scenarios of inactive members in data wrangling", align = c('l', 'c') )
+
+test_stat_tible <- tmp3 |> group_by(i_identify_as_poc) |> summarise(n = n(), mean = mean(total_attendence))
+test_stat <- test_stat_tible |> summarise(diff = diff(mean)) |> as.numeric()
+```
+```{r, echo=FALSE}
+#| layout-ncol: 2
+
+kable(test_stat_tible, col.names = c("Identified as POC", "People", "Mean"), caption = "Summarise of our sample",align = c('l', 'c', 'r'))
+set.seed(522)
+num_trials <- 1000
+delta_mean_simulations <- rep(NA, num_trials)
+for(i in 1:num_trials){
+  simdata <- tmp3 |> mutate(i_identify_as_poc = sample(i_identify_as_poc, replace = FALSE))
+  delta_assuming_no_diff <- simdata |> group_by(i_identify_as_poc) |> summarise(n = n(), mean = mean(total_attendence)) |> summarise(diff = diff(mean)) |> as.numeric()
+  delta_mean_simulations[i] <- delta_assuming_no_diff
+}
+# tibble(delta_mean_simulations) |> ggplot(aes(x=delta_mean_simulations) ) + geom_histogram()
+pvalue <- sum(abs(delta_mean_simulations) >= abs(test_stat)) / length(delta_mean_simulations)
+
+kable(tibble(
+  `Metric` = c("Test statistic", "P value"),
+  `Value` = c(test_stat, pvalue)
+), caption = "Table of results")
+```
+\normalsize
+
+## Question 2 Conclusion
+
+- No significant difference in attendance between members who identify as POC and those who do not.
+- Attendance distribution was heavily skewed toward low values for both groups.
+- Many members attend few or no events.
+
+This highlights the need for:
+
+  1. Further investigation into barriers to engagement, such as accessibility or program relevance.
+  2. Targeted outreach to ensure all members feel welcome and supported.
+
+## Question 3: Predicting Attendance Using Registration Date, Mailing Province, and Cancer Risk
+
+\small
+
+Goals:
+
+-   Finding trends in variable significance
+-   Using these variables to predict attendance/active status of an individual
+
+Applications:
+
+-   Adjust web-content or service depending of personal information variables.
+
+Variables Used:
+
+-   mailing province: Categorized as East or West Canada.
+-   registration date: The user's registration date
+-   cancer risk: Categorized as high or low risk.
+-   last service date before march 2024: Boolean indicating if the member attended a service in the past three months (predictor variable).
+
+\normalsize
+
+```{r}
+# load libraries and packages
+
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("tidyverse")) install.packages("tidyverse")
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("rpart")) install.packages("rpart")
+if (!require("partykit")) install.packages("partykit")
+if (!require("kableExtra")) install.packages("kableExtra")
+
+
+library(rpart)
+library(ggplot2) 
+library(tidyverse)
+library(dplyr)
+library(partykit)
+library(kableExtra)
+
+```
+
+```{r}
+
+# reading csv, however, with the logical columsn specified, since some problems arose with the default reading
+member <- read_csv("Member_Background.csv")
+service <- read_csv("Service_Deliveries.csv", show_col_types = FALSE)
+
+# date creation
+member <- member %>%
+  mutate(
+    # cleaning if the last service that is empty, but the rest is not
+    last_service_date = make_date(
+      year = last_service_date_year,
+      month = last_service_date_month,
+      day = last_service_date_day
+     ))
+
+```
+
+## Data Wrangling
+
+Take a look at the observations. Number of Unique Cancer Types: 129. Number of Unique Mailing Provinces/States: 7
+
+Wrangle: Province -> East/West, Cancer -> High Risk/Low Risk.
+
+```{r, echo=FALSE}
+#| layout-ncol: 2
+
+unique_cancers <- unique(member$types_of_cancer[!is.na(member$types_of_cancer)])
+cancer_table <- data.frame(Type_of_Cancer = head(unique_cancers))
+
+unique_provinces <- unique(member$mailing_state_province[!is.na(member$mailing_state_province)])
+provinces_table <- data.frame(Mailing_Province_State = head(sort(unique_provinces)))
+
+summary_table2 <- mtcars |> 
+  group_by(cyl) |>
+  summarise(n=n(),
+            mean_hp = mean(hp))
+
+kable(cancer_table, col.names = c("Type of Cancer"), caption = "Unique Types of Cancer")
+kable(provinces_table, col.names = c("Province Names"), caption = "Unique Province Names")
+```
+
+```{r}
+
+# Create reference date components
+ref_year <- 2024
+ref_month <- 3
+
+# add binary variable for membership start before March 2024
+member <- member %>%
+  mutate(
+    member_start_date = make_date(
+      year = member_start_year,
+      month = member_start_month,
+      day = 1  # Using first day of month since we only have year and month
+    ),
+    is_before_march2024 = case_when(
+      is.na(member_start_year) | is.na(member_start_month) ~ NA,
+      member_start_year < ref_year ~ TRUE,
+      member_start_year > ref_year ~ FALSE,
+      member_start_year == ref_year & member_start_month < ref_month ~ TRUE,
+      TRUE ~ FALSE
+    ),
+    region_canada = case_when(
+      mailing_state_province %in% c("British Columbia", "Alberta", "Saskatchewan", "Manitoba", "Yukon", "Northwest Territories") ~ "West",
+      mailing_state_province %in% c("Ontario", "Quebec", "New Brunswick", "Nova Scotia", "Prince Edward Island", "Newfoundland and Labrador") ~ "East",
+      is.na(mailing_state_province) ~ NA_character_,
+      TRUE ~ "Other"  # for non-Canadian provinces/states
+    ),
+    cancer_risk = case_when(
+      is.na(types_of_cancer) ~ NA_character_,
+      # Check for high-risk cancers first  (prioritised)
+      str_detect(tolower(types_of_cancer), 
+                "brain|leukemia|ovarian|colorectal|non-hodgkin|liver|lung|myeloma|uterine|pancreatic|head|neck|laryngeal|pharyngeal|oral|stomach|cervical|esophagus|gallbladder|bile duct|kidney|renal|bladder") ~ "High Risk",
+      # Then check for low-risk cancers
+      str_detect(tolower(types_of_cancer), "breast|prostate|thyroid|skin|melanoma|hodgkin|testicular") ~ "Low Risk",
+      TRUE ~ "Other/Unknown" 
+    )
+  )
+
+```
+
+## Visualising Registration Distribution
+
+\tiny
+
+```{r, echo=FALSE}
+
+# Calculate percentages
+date_summary <- member %>%
+  filter(!is.na(is_before_march2024)) %>%
+  group_by(is_before_march2024) %>%
+  summarise(
+    count = n(),
+    percentage = round(n() / sum(!is.na(member$is_before_march2024)) * 100, 1)
+  )
+
+date_summary %>%
+  kbl(caption = "Membership Distribution", col.names = c("Registered Before 03/2024", "Number of Users", "Total Percentage"))
+
+
+```
+
+```{r, fig.width=8, fig.height=4, out.width="80%"}
+# Visualize the distribution of start dates
+ggplot(member %>% filter(!is.na(member_start_date)), 
+       aes(x = member_start_date)) +
+  geom_histogram(binwidth = 30, fill = "steelblue", alpha = 0.7) +
+  geom_vline(xintercept = as.Date("2024-03-01"), 
+             color = "red", linetype = "dashed") +
+  labs(title = "Distribution of Membership Start Dates",
+       subtitle = "Red line indicates March 2024",
+       x = "Start Date",
+       y = "Count",
+       caption="Figure 4") +
+      theme_minimal()
+
+```
+
+## Canadian Regions Distribution
+
+\tiny
+
+```{r, echo=FALSE}
+
+risk_summary <- member %>%
+  filter(region_canada %in% c("East", "West")) %>%
+  group_by(region_canada) %>%
+  summarise(
+    count = n(),
+    percentage = round((n() / nrow(member %>% filter(region_canada %in% c("East", "West")))) * 100, 1)
+  )
+
+
+risk_summary %>%
+  kbl(caption = "Canadian Region Distribution", col.names = c("Canadian Region", "Number of Users", "Total Percentage"))
+
+```
+
+```{r, fig.width=8, fig.height=4, out.width="80%"}
+# visualise the distribution fo region_canada (mailing province) 
+ggplot(member %>% filter(!is.na(region_canada)), 
+       aes(x = region_canada)) +
+  geom_bar(fill = "steelblue", alpha = 0.7) +
+  labs(title = "Distribution of Mailing Addresses Located in East/West Canada",
+       x = "Province",
+       y = "Count",
+       caption = "Figure 5") +
+  theme_minimal()
+```
+
+## Cancer Risk Distribution
+
+\tiny
+
+```{r, echo=FALSE}
+#| layout-ncol: 2
+
+risk_summary <- member %>%
+  filter(cancer_risk %in% c("Low Risk", "High Risk")) %>%
+  group_by(cancer_risk) %>%
+  summarise(
+    count = n(),
+    percentage = round((n() / 3350) * 100, 1)
+  )
+
+```
+
+```{r, fig.width=8, fig.height=4, out.width="80%"}
+
+risk_summary %>%
+  kbl(caption = "Cancer Risk Distribution", col.names = c("Level of Risk", "Number of Users", "Total Percentage"))
+
+ggplot(member %>% filter(cancer_risk %in% c("Low Risk", "High Risk")), 
+       aes(x = cancer_risk, fill = cancer_risk)) +
+  geom_bar() +
+  scale_fill_manual(values = c("Low Risk" = "forestgreen", "High Risk" = "darkred")) +
+  labs(title = "Distribution of Cancer Risk Levels",
+       subtitle = "High-risk cancers prioritized in classification",
+       x = "Risk Level",
+       y = "Count",
+       fill = "Risk Level",
+       caption = "Figure 6") +
+  theme_minimal() +
+  theme(legend.position = "none")  
+```
+
+```{r}
+current_date <- as.Date("2025-01-01") # last known date of attendance from data source
+# add new predicting variable
+member <- member %>%
+  mutate(
+    service_within_three_months = case_when(
+      is.na(last_service_date) ~ NA,
+      last_service_date >= (current_date - 90) ~ TRUE,
+      TRUE ~ FALSE
+    )
+  )
+
+# filter dataset
+
+new_member <- member %>%
+  filter(region_canada != "Other") %>%
+  select(is_before_march2024, region_canada, cancer_risk, service_within_three_months) %>%
+  mutate(
+    # convert each variable to factor with explicit levels
+    is_before_march2024 = factor(is_before_march2024, levels = c(FALSE, TRUE), labels = c("Registered Before March 2024", "Registered After March 2024")),
+    region_canada = factor(region_canada, levels = c("East", "West")),
+    cancer_risk = factor(cancer_risk, levels = c("Low Risk", "High Risk")),
+    service_within_three_months = factor(service_within_three_months, levels = c(FALSE, TRUE), labels = c("Attended Service Within Past 3 Months", "Did Not Attend Service Within Past 3 Months"))
+  ) %>%
+  drop_na()  # remove any NA values
+
+
+```
+
+## Visualise Variable's Statistical Influence/Significance
+
+\tiny
+
+```{r, echo=FALSE}
+#| layout-ncol: 3
+# p values
+p1 <- chisq.test(table(new_member$cancer_risk, new_member$service_within_three_months))$p.value
+p2 <- chisq.test(table(new_member$region_canada, new_member$service_within_three_months))$p.value
+p3 <- chisq.test(table(new_member$is_before_march2024, new_member$service_within_three_months))$p.value
+
+p_values_table <- data.frame(
+  Variable = c("Cancer Risk", "Region (Canada)", "Before March 2024"),
+  P_Value = c(p1, p2, p3)
+)
+
+kable(p_values_table, caption = "P-Values")
+# this should fix the figure 1 caption
+
+
+```
+
+\normalsize
+```{r, fig.width=8, fig.height=4, out.width="80%"}
+# visualise the p values with images that will help a non-technical understanding of non influence
+
+new_member_long <- new_member %>%
+  gather(key = "variable", value = "category", cancer_risk, region_canada, is_before_march2024)
+
+ggplot(new_member_long, aes(x = category, fill = service_within_three_months)) +
+  geom_bar(position = "fill") +
+  labs(y = "Proportion", x = "Category", fill = "Service Usage", caption = "Figure 6") +
+  ggtitle("Service Usage by Different Categories") +
+  facet_wrap(~ variable, scales = "free_x", 
+             labeller = labeller(variable = c(
+               cancer_risk = "Cancer Risk",
+               region_canada = "Region (Canada)",
+               is_before_march2024 = "Reg. Before March 2024"
+             ))) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+\normalsize
+
+## Tree Model
+
+```{r}
+
+library(rpart)
+library(partykit)
+
+# edit the variable names to be shorter (to fit tree)
+
+new_member <- member %>%
+  filter(region_canada != "Other") %>%
+  select(is_before_march2024, region_canada, cancer_risk, service_within_three_months) %>%
+  mutate(
+    # convert each variable to factor with explicit levels
+    is_before_march2024 = factor(is_before_march2024, levels = c(FALSE, TRUE), labels = c("Reg. Before March 2024", "Reg. After March 2024")),
+    region_canada = factor(region_canada, levels = c("East", "West")),
+    cancer_risk = factor(cancer_risk, levels = c("Low Risk", "High Risk")),
+    service_within_three_months = factor(service_within_three_months, levels = c(FALSE, TRUE), labels = c("Active", "Non-Active"))
+  ) %>%
+  drop_na()  # remove any NA values
+
+
+# create a classification tree model
+tree_model <- rpart(
+  service_within_three_months ~ .,
+  data = new_member,
+  method = "class",
+  control = rpart.control(
+    minsplit = 1,
+    minbucket = 1,
+    cp = 0,
+    maxdepth = 6
+  )
+)
+
+plot(as.party(tree_model, gp=gpar(cex = 1), type="simple"))
+
+
+```
+
+## Tree Accuracy
+\small
+
+```{r, echo=FALSE}
+#| layout-ncol: 2
+
+
+# get predictions from the model
+predictions <- predict(tree_model, new_member, type = "class")
+
+conf_matrix <- table(Predicted = predictions, 
+                    Actual = new_member$service_within_three_months)
+
+kable(conf_matrix, caption = "Confusion Matrix (Predicted/Actual)")
+
+
+# accuracy
+TP <- conf_matrix[2, 2]
+TN <- conf_matrix[1, 1]
+FP <- conf_matrix[1, 2]
+FN <- conf_matrix[2, 1]
+
+accuracy <- (TP + TN) / sum(conf_matrix)
+sensitivity <- TP / (TP + FN)
+specificity <- TN / (TN + FP)
+
+overall_accuracy = round(accuracy * 100, 1)
+sensitivity = round(sensitivity * 100, 1)
+specificity = round(specificity * 100, 1)
+
+results_table <- data.frame(
+  Metric = c("Overall Accuracy", "Sensitivity", "Specificity"),
+  Percentage = c(overall_accuracy, sensitivity, specificity)
+)
+
+kable(results_table, caption = "Accuracy Table")
+```
+
+## Summary/Conclusion: Predicting Attendance Using Registration Date, Mailing Province, and Cancer Risk
+
+Our variable significance analysis, in addition with the tree model suggests that:
+
+- Whether or not a user registered prior or after March 2024 has the biggest impact on the user activity status (in accordance with their service attendance) by a large margin.
+
+Interpretations:
+
+- This means that the new registration system was largely successful, at least in regard to service attendance rate.
+
+
+
+
+
+## Limitations(1.Data Limitations)
+
+1.  **Limited Demographic Variables**
+
+    -   Misses Income, education, cultural background
+
+    -   *Improvement*: Collect via surveys/registration forms
+
+2.  **Self-Reported POC Status**
+
+    -   May not fully capture racial/ethnic identities
+
+    -   *Improvement*: Add detailed categories
+
+3.  **Cancer Type/Stage Excluded**
+
+    -   May impact attendance ability
+
+    -   *Improvement*: Incorporate medical data
+
+4.  **Geographic Oversimplification**
+
+    -   Only East/West Canada categorization
+
+    -   *Improvement*: Use city/postal code data
+
+## Limitations(2. Statistical Method Limitations)
+
+1.  **Linear Regression Assumptions**
+
+    -   May have non-linear relationships
+
+    -   *Improvement*: Test non-linear models
+
+2.  **Randomization Test Limitations**
+
+    -   Ignores potential confounders (e.g., socioeconomic status)
+
+    -   *Improvement*: Use multivariate regression
+
+3.  **Classification Tree Oversimplification**
+
+    -   Misses variable interactions (e.g., program type)
+
+    -   *Improvement*: Adopt ensemble methods (bagging/random forests)
+
+## Overall Conclusion
+
+The simplified registration system successfully boosted engagement, particularly among older members (30-80 years) and those with diverse program interests (5-7 programs).
+
+However, younger participants and members with limited interests show lower attendance, while POC status, cancer risk, and location had minimal impact.
+
+**Next Steps and Future Analyses**
+
+1.  Target younger members with tailored programs
+
+2.  Encourage multi-program participation
+
+3.  Address broader engagement barriers (accessibility, relevance)
+
+
+
+
+
